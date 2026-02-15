@@ -1,0 +1,123 @@
+{% extends 'base.html' %} {% block title %}{{ post.title }}{% endblock %} {%
+block content %}
+<div class="row">
+  <div class="col-lg-8">
+    <!-- Title -->
+    <h1 class="mt-4">{{ post.title }}</h1>
+    <!-- Author -->
+    <p class="lead">by {{ post.author }}</p>
+    <hr />
+    <!-- Date/Time -->
+    <p>Posted on {{ post.created_at|date:"F d, Y" }}</p>
+    <hr />
+    <!-- Preview Image -->
+    {% if post.cover_image %}
+    <img class="img-fluid rounded" src="{{ post.cover_image.url }}" alt="" />
+    <hr />
+    {% endif %}
+
+    <!-- Like Button -->
+    {% if user.is_authenticated %}
+    <div class="mb-3">
+      <button
+        id="like-btn"
+        class="btn btn-outline-danger"
+        data-slug="{{ post.slug }}"
+      >
+        <span id="like-icon"
+          >{% if user in post.likes.all %}❤️{% else %}🤍{% endif %}</span
+        >
+        <span id="like-count">{{ post.likes.count }}</span> Likes
+      </button>
+    </div>
+    {% else %}
+    <div class="mb-3">
+      <span class="text-danger">❤️</span> {{ post.likes.count }} Likes
+    </div>
+    {% endif %}
+
+    <!-- Post Content -->
+    <div class="post-content">{{ post.content|safe }}</div>
+    <hr />
+
+    {% if user == post.author %}
+    <a href="{% url 'post_edit' post.slug %}" class="btn btn-warning"
+      >Edit Post</a
+    >
+    <a href="{% url 'post_delete' post.slug %}" class="btn btn-danger"
+      >Delete Post</a
+    >
+    <hr />
+    {% endif %}
+
+    <!-- Comments Form -->
+    <div class="card my-4">
+      <h5 class="card-header">Leave a Comment:</h5>
+      <div class="card-body">
+        {% if user.is_authenticated %}
+        <form method="post">
+          {% csrf_token %} {{ comment_form.as_p }}
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+        {% else %}
+        <p>Please <a href="{% url 'login' %}">log in</a> to leave a comment.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Single Comment -->
+    {% for comment in comments %}
+    <div class="d-flex mb-4">
+      <div class="flex-shrink-0">
+        <img
+          class="rounded-circle"
+          src="https://dummyimage.com/50x50/ced4da/6c757d.jpg"
+          alt="..."
+        />
+      </div>
+      <div class="ms-3">
+        <div class="fw-bold">
+          {{ comment.author }}
+          <small class="text-muted"
+            >{{ comment.created_at|timesince }} ago</small
+          >
+        </div>
+        {{ comment.content }}
+      </div>
+    </div>
+    {% empty %}
+    <p>No comments yet.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const likeBtn = document.getElementById("like-btn");
+    if (likeBtn) {
+      likeBtn.addEventListener("click", function () {
+        const slug = this.dataset.slug;
+        fetch(`/post/${slug}/like/`, {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": "{{ csrf_token }}",
+            "Content-Type": "application/json",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            const icon = document.getElementById("like-icon");
+            const count = document.getElementById("like-count");
+
+            if (data.liked) {
+              icon.textContent = "❤️";
+            } else {
+              icon.textContent = "🤍";
+            }
+            count.textContent = data.count;
+          });
+      });
+    }
+  });
+</script>
+{% endblock %}

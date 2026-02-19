@@ -6,7 +6,31 @@
 
 {% block content %}
 <div class="row">
-  <div class="col-lg-8">
+  <div class="col-lg-7">
+    <div class="post-panel p-0">
+      {% if post.cover_image %}
+      <div style="width:100%;height:0;padding-top:100%;position:relative;overflow:hidden;">
+        <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" />
+      </div>
+      {% else %}
+      <div style="width:100%;height:0;padding-top:100%;background:#eee;"></div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="post-panel p-3">
+      <h5 class="mb-1">{{ post.author }}</h5>
+      <p class="text-muted small">Posted on {{ post.created_at|date:"F d, Y" }}</p>
+      <hr />
+      <div class="mb-3">
+        <button id="like-btn" class="btn btn-light border" data-slug="{{ post.slug }}">
+          <span id="like-icon">{% if user in post.likes.all %}❤️{% else %}🤍{% endif %}</span>
+        </button>
+        <span id="like-count" class="ms-2">{{ post.likes.count }}</span>
+      </div>
+      <div class="post-content mb-3">{{ post.content|safe }}</div>
+      <hr />
+      <div class="post-comments">
     <!-- Title -->
     <h1 class="mt-4">{{ post.title }}</h1>
     <!-- Author -->
@@ -15,47 +39,39 @@
     <!-- Date/Time -->
     <p>Posted on {{ post.created_at|date:"F d, Y" }}</p>
     <hr />
-    <!-- Preview Image -->
-    {% if post.cover_image %}
-    <img class="img-fluid rounded" src="{{ post.cover_image.url }}" alt="" />
-    <hr />
-    {% endif %}
+      <!-- Comments Form -->
+      <div class="mb-3">
+        <h6>Leave a comment</h6>
+        {% if user.is_authenticated %}
+        <form method="post">
+          {% csrf_token %}
+          {{ comment_form.as_p }}
+          <button type="submit" class="btn btn-sm btn-primary">Submit</button>
+        </form>
+        {% else %}
+        <p>Please <a href="{% url 'login' %}">log in</a> to leave a comment.</p>
+        {% endif %}
+      </div>
 
-    <!-- Like Button -->
-    {% if user.is_authenticated %}
-    <div class="mb-3">
-      <button
-        id="like-btn"
-        class="btn btn-outline-danger"
-        data-slug="{{ post.slug }}"
-      >
-        <span id="like-icon"
-          >{% if user in post.likes.all %}❤️{% else %}🤍{% endif %}</span
-        >
-        <span id="like-count">{{ post.likes.count }}</span> Likes
-      </button>
+      <!-- Single Comment -->
+      {% for comment in comments %}
+      <div class="d-flex mb-3">
+        <img class="rounded-circle me-2" src="https://dummyimage.com/40x40/ced4da/6c757d.jpg" alt="..." />
+        <div>
+          <div class="fw-bold">{{ comment.author }} <small class="text-muted">{{ comment.created_at|timesince }} ago</small></div>
+          <div>{{ comment.content }}</div>
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-muted">No comments yet.</p>
+      {% endfor %}
     </div>
-    {% else %}
-    <div class="mb-3">
-      <span class="text-danger">❤️</span> {{ post.likes.count }} Likes
-    </div>
-    {% endif %}
+  </div>
+</div>
 
-    <!-- Post Content -->
-    <div class="post-content">{{ post.content|safe }}</div>
-    <hr />
+{% endblock %}
 
-    {% if user == post.author %}
-    <a href="{% url 'post_edit' post.slug %}" class="btn btn-warning"
-      >Edit Post</a
-    >
-    <a href="{% url 'post_delete' post.slug %}" class="btn btn-danger"
-      >Delete Post</a
-    >
-    <hr />
-    {% endif %}
-
-    <!-- Comments Form -->
+{% block scripts %}
     <div class="card my-4">
       <h5 class="card-header">Leave a Comment:</h5>
       <div class="card-body">

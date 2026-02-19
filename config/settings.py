@@ -144,6 +144,8 @@ AUTH_USER_MODEL = 'users.User'
 
 # Redirect users after login to site root (home page)
 LOGIN_REDIRECT_URL = '/'
+# Ensure Django's auth redirects use the users app login URL
+LOGIN_URL = '/users/login/'
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'

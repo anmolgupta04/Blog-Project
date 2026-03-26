@@ -1,30 +1,57 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block title %}
-{% if view.action == 'create' %}
-Create Post
-{% else %}
-Edit Post
-{% endif %}
+  {% if form.instance.pk %}Edit Post{% else %}Create Post{% endif %} | StoryBoard
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-8">
-    <div class="card">
-      <div class="card-header">
-        <h3>
-          {% if form.instance.pk %}Edit Post{% else %}Create New Post{% endif %}
-        </h3>
-      </div>
-      <div class="card-body">
-        <form method="post" enctype="multipart/form-data">
-          {% csrf_token %} {{ form.as_p }}
-          <button type="submit" class="btn btn-success">Save</button>
-          <a href="{% url 'post_list' %}" class="btn btn-secondary">Cancel</a>
+  <div class="row justify-content-center">
+    <div class="col-xl-8 col-lg-10">
+      <section class="detail-card shadow-sm p-4 p-lg-5">
+        <span class="eyebrow">{% if form.instance.pk %}Update{% else %}Create{% endif %}</span>
+        <h1 class="section-title mt-2">
+          {% if form.instance.pk %}
+            Refine your post
+          {% else %}
+            Publish a new story
+          {% endif %}
+        </h1>
+        <p class="text-muted">
+          Draft content safely or publish immediately. Validation runs on the server before anything is saved.
+        </p>
+
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+          {% endif %}
+
+          {% for field in form %}
+            <div class="mb-4">
+              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}
+                <div class="form-text">{{ field.help_text }}</div>
+              {% endif %}
+              {% for error in field.errors %}
+                <div class="invalid-feedback d-block">{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+
+          <div class="d-flex flex-wrap gap-3">
+            <button type="submit" class="btn btn-accent">
+              {% if form.instance.pk %}Save changes{% else %}Create post{% endif %}
+            </button>
+            {% if form.instance.pk %}
+              <a href="{% url 'post_detail' form.instance.slug %}" class="btn btn-outline-dark">Cancel</a>
+            {% else %}
+              <a href="{% url 'post_list' %}" class="btn btn-outline-dark">Cancel</a>
+            {% endif %}
+          </div>
         </form>
-      </div>
+      </section>
     </div>
   </div>
-</div>
 {% endblock %}

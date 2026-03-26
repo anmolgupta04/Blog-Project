@@ -11,6 +11,20 @@ def env_bool(name, default=False):
     value = str(config(name, default=str(default))).strip().lower()
     return value in {"1", "true", "yes", "on"}
 
+
+def env_list(name, default=""):
+    return [
+        item.strip()
+        for item in config(name, default=default, cast=Csv())
+        if item and item.strip()
+    ]
+
+
+def append_unique(items, value):
+    if value and value not in items:
+        items.append(value)
+
+
 # Read secrets and environment-specific values from `.env`.
 SECRET_KEY = config(
     "SECRET_KEY",
@@ -18,20 +32,24 @@ SECRET_KEY = config(
 )
 DEBUG = env_bool("DEBUG", default=True)
 
-ALLOWED_HOSTS = [
-    host for host in config(
-        "ALLOWED_HOSTS",
-        default="127.0.0.1,localhost",
-        cast=Csv(),
-    )
-    if host
-]
+configured_allowed_hosts = config("ALLOWED_HOSTS", default="").strip()
+configured_csrf_origins = config("CSRF_TRUSTED_ORIGINS", default="").strip()
+render_external_hostname = config("RENDER_EXTERNAL_HOSTNAME", default="").strip()
 
-CSRF_TRUSTED_ORIGINS = [
-    origin
-    for origin in config("CSRF_TRUSTED_ORIGINS", default="", cast=Csv())
-    if origin
-]
+ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", default="127.0.0.1,localhost")
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS")
+
+if render_external_hostname:
+    append_unique(ALLOWED_HOSTS, render_external_hostname)
+    append_unique(CSRF_TRUSTED_ORIGINS, f"https://{render_external_hostname}")
+
+# Render serves apps from *.onrender.com by default. Keep a safe production
+# fallback so deployments still work if ALLOWED_HOSTS/CSRF env vars are absent.
+if not DEBUG and not configured_allowed_hosts:
+    append_unique(ALLOWED_HOSTS, ".onrender.com")
+
+if not DEBUG and not configured_csrf_origins:
+    append_unique(CSRF_TRUSTED_ORIGINS, "https://*.onrender.com")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
